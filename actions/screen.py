@@ -50,10 +50,10 @@ def get_screen_text():
     Extract all text from current screen using OCR.
     
     Uses thresholding to improve OCR accuracy on the screenshot.
-    Returns cleaned text with whitespace normalized.
+    Returns cleaned, trimmed text limited to ~400 characters.
     
     Returns:
-        String containing all detected text from screen
+        String containing detected text from screen (max 400 chars)
     """
     try:
         # STEP 1: Take screenshot
@@ -78,7 +78,33 @@ def get_screen_text():
         lines = [line.strip() for line in text.split('\n') if line.strip()]
         cleaned_text = '\n'.join(lines)
         
-        return cleaned_text
+        # ===== POST-PROCESSING: Clean and trim output =====
+        # Remove repeated symbols and noise (e.g., "===", "---", "***")
+        import re
+        # Replace 3+ repeated symbols with single instance
+        cleaned_text = re.sub(r'([=\-_*#])\1{2,}', r'\1', cleaned_text)
+        # Remove lines that are only symbols
+        cleaned_text = re.sub(r'^[=\-_*#\s]+$', '', cleaned_text, flags=re.MULTILINE)
+        # Remove excessive newlines (more than 2 in a row)
+        cleaned_text = re.sub(r'\n{3,}', '\n\n', cleaned_text)
+        # Strip again after cleaning
+        cleaned_text = cleaned_text.strip()
+        
+        # Limit output to 400 characters for readability
+        if len(cleaned_text) > 400:
+            # Try to cut at a sentence boundary within the limit
+            truncated = cleaned_text[:400]
+            # Find last period, question mark, or newline
+            for delimiter in ['.', '?', '!', '\n']:
+                last_pos = truncated.rfind(delimiter)
+                if last_pos > 300:  # Make sure we have at least 300 chars
+                    cleaned_text = truncated[:last_pos + 1]
+                    break
+            else:
+                # If no good boundary found, just cut at 400
+                cleaned_text = truncated
+        
+        return cleaned_text if cleaned_text else ""
     
     except Exception as e:
         print(f"Error getting screen text: {e}")
@@ -353,3 +379,91 @@ def press_key(key):
     except Exception as e:
         print(f"Error pressing key '{key}': {e}")
         return False
+
+
+# ===== SCREEN AGENT CLASS =====
+class ScreenAgent:
+    """
+    Agent for interacting with screen content via OCR and automation.
+    Provides methods for reading, analyzing, and interacting with on-screen elements.
+    """
+    
+    def read_screen_text(self) -> str:
+        """
+        Read text visible on screen, excluding terminal/console output.
+        
+        Returns:
+            str: Readable text from screen (max 500 chars)
+        """
+        try:
+            # Take screenshot of ENTIRE screen
+            screenshot = pyautogui.screenshot()
+            screenshot.save("memory/screenshot.png")
+            
+            # OCR
+            raw_text = pytesseract.image_to_string(screenshot)
+            
+            # Clean: remove lines shorter than 4 chars, strip terminal-looking lines
+            lines = raw_text.split('\n')
+            clean_lines = []
+            for line in lines:
+                line = line.strip()
+                if len(line) < 4:
+                    continue
+                # Skip terminal/console lines
+                if line.startswith(('PS ', '(.venv)', '>>>', '...', '$', '#', 'C:\\', 'C:>')):
+                    continue
+                # Skip box drawing characters
+                if all(c in '─│┌┐└┘├┤┬┴┼' for c in line):
+                    continue
+                clean_lines.append(line)
+            
+            # Join meaningful lines and limit
+            result = ' | '.join(clean_lines[:15])  # max 15 meaningful lines
+            result = result[:500]  # cap at 500 chars
+            
+            if not result.strip():
+                return "Screen appears empty or unreadable boss"
+            
+            return result
+        except Exception as e:
+            return f"Error reading screen: {str(e)}"
+    
+    def analyze_screen(self, question: str) -> str:
+        """
+        Read screen content and provide analysis based on question.
+        
+        Args:
+            question (str): Question about the screen content
+        
+        Returns:
+            str: Analysis or answer
+        """
+        try:
+            screen_content = self.read_screen_text()
+            
+            # For now, return the screen content as the analysis
+            # In the future, this could use LLM to answer questions about screen
+            return f"Screen content: {screen_content}"
+        except Exception as e:
+            return f"Error analyzing screen: {str(e)}"
+    
+    def find_and_click(self, text: str) -> str:
+        """
+        Find text on screen and click on it.
+        
+        Args:
+            text (str): Text to find and click
+        
+        Returns:
+            str: Status message
+        """
+        try:
+            # Use existing click_text function
+            result = click_text(text)
+            if result:
+                return f"Clicked on '{text}' boss"
+            else:
+                return f"Couldn't find '{text}' on screen boss"
+        except Exception as e:
+            return f"Error clicking text: {str(e)}"

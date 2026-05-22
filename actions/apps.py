@@ -3,6 +3,7 @@ import os
 import winreg
 import getpass
 import webbrowser
+from memory.state import get_state, set_vscode_open, is_vscode_running
 
 
 COMMON_APPS = {
@@ -118,6 +119,25 @@ def open_app(app_name):
         if app_lower in COMMON_APPS:
             path = COMMON_APPS[app_lower]
             print(f"[DEBUG] Found in COMMON_APPS: {app_lower} -> {path}")
+            
+            # ===== STATE CHECK: VS Code handling =====
+            if app_lower in ["vs code", "vscode"]:
+                state = get_state()
+                # Check if VS Code ACTUALLY running (not just in saved state)
+                vscode_running = is_vscode_running()
+                
+                if vscode_running and not state["new_project_mode"]:
+                    # VS Code open + not creating new project = don't open new window
+                    print(f"[STATE] VS Code already open. Not opening new window (not in new project mode)")
+                    return True
+                elif vscode_running and state["new_project_mode"]:
+                    # VS Code open + creating new project = open new window anyway
+                    print(f"[STATE] New project mode: opening new VS Code window despite one already open")
+                    set_vscode_open(True)
+                else:
+                    # VS Code not running = open it
+                    print(f"[STATE] VS Code not running, opening new window")
+                    set_vscode_open(True)
             
             # Check if it's a full path or simple executable name
             if "\\" in path:

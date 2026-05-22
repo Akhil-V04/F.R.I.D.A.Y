@@ -1,100 +1,74 @@
 {
-  "whatsapp_flow:to personal account": {
-    "action": "whatsapp_flow",
-    "target": "to personal account",
-    "response": "Message sent to +91 93925 24228 (You) boss.",
-    "count": 1,
-    "last_used": "2026-04-13T17:33:06.783607"
+  "open chrome": {
+    "original": "open chrome",
+    "tool": "open_app",
+    "result": "Chrome opened",
+    "usage_count": 18,
+    "avg_response_ms": 120.0,
+    "last_used": "2026-04-19T20:20:55.129744",
+    "created": "2026-04-19T20:18:32.259596"
   },
-  "whatsapp_flow:send a message to myself": {
-    "action": "whatsapp_flow",
-    "target": "send a message to myself",
-    "response": "Message sent to +91 93925 24228 (You) boss.",
-    "count": 7,
-    "last_used": "2026-04-13T17:55:21.951327"
+  "open firefox": {
+    "original": "open firefox",
+    "tool": "open_app",
+    "result": "Firefox opened",
+    "usage_count": 4,
+    "avg_response_ms": 115.0,
+    "last_used": "2026-04-19T20:20:55.124737",
+    "created": "2026-04-19T20:18:32.260559"
   },
-  "whatsapp_flow:send a message": {
-    "action": "whatsapp_flow",
-    "target": "send a message",
-    "response": "Failed boss: name 'open_whatsapp' is not defined",
-    "count": 2,
-    "last_used": "2026-04-13T18:12:59.951540"
+  "send message to sai": {
+    "original": "send message to sai",
+    "tool": "whatsapp_flow",
+    "result": "Message sent to Sai",
+    "usage_count": 1,
+    "avg_response_ms": 200,
+    "last_used": "2026-04-19T20:18:32.261079",
+    "created": "2026-04-19T20:18:32.261082"
   },
-  "whatsapp_flow:send a message to bhavana": {
-    "action": "whatsapp_flow",
-    "target": "send a message to bhavana",
-    "response": "Message sent to bhavana boss.",
-    "count": 6,
-    "last_used": "2026-04-14T11:41:23.393935"
+  "take a screenshot": {
+    "original": "take a screenshot",
+    "tool": "take_screenshot",
+    "result": "Screenshot saved to Desktop",
+    "usage_count": 3,
+    "avg_response_ms": 250.0,
+    "last_used": "2026-04-19T20:20:55.125313",
+    "created": "2026-04-19T20:20:37.774108"
   },
-  "whatsapp_flow:send a message to mum": {
-    "action": "whatsapp_flow",
-    "target": "send a message to mum",
-    "response": "Message sent to mum boss.",
-    "count": 1,
-    "last_used": "2026-04-13T18:10:19.058862"
+  "what time is it": {
+    "original": "what time is it",
+    "tool": "get_time",
+    "result": "It's 8:22 PM",
+    "usage_count": 4,
+    "avg_response_ms": 50.0,
+    "last_used": "2026-04-19T20:22:23.099471",
+    "created": "2026-04-19T20:20:37.774684"
   },
-  "set_alarm:5 minutes": {
-    "action": "set_alarm",
-    "target": "5 minutes",
-    "response": "Alarm set for 05:00 boss.",
-    "count": 1,
-    "last_used": "2026-04-13T18:16:48.592568"
+  "whats the date": {
+    "original": "What's the date",
+    "tool": "get_date",
+    "result": "Today is Sunday, 19 April 2026",
+    "usage_count": 1,
+    "avg_response_ms": 0,
+    "last_used": "2026-04-19T20:32:52.143407",
+    "created": "2026-04-19T20:32:52.143412"
   },
-  "get_time": {
-    "action": "get_time",
-    "target": null,
-    "response": "It's 6:19 PM",
-    "count": 1,
-    "last_used": "2026-04-13T18:19:01.421663"
+  "fire take a screenshot": {
+    "original": "fire take a screenshot",
+    "tool": "take_screenshot",
+    "result": "Screenshot taken and saved to Pictures boss.",
+    "usage_count": 1,
+    "avg_response_ms": 0,
+    "last_used": "2026-04-19T20:33:09.269843",
+    "created": "2026-04-19T20:33:09.269856"
   },
-  "set_timer:for 5 minutes": {
-    "action": "set_timer",
-    "target": "for 5 minutes",
-    "response": "Timer set for 5 minutes boss.",
-    "count": 8,
-    "last_used": "2026-04-13T20:07:51.934210"
-  },
-  "ask_brain": {
-    "action": "ask_brain",
-    "target": null,
-    "response": "Alright, let\u2019s get this done then! What exactly need we manually handle today?",
-    "count": 4,
-    "last_used": "2026-04-14T11:39:54.486416"
-  },
-  "ask_brain:manually": {
-    "action": "ask_brain",
-    "target": "manually",
-    "response": "Alright, let\u2019s get this done then! What exactly need we manually handle today?",
-    "count": 1,
-    "last_used": "2026-04-13T19:03:50.189026"
-  },
-  "world_briefing": {
-    "action": "world_briefing",
-    "target": null,
-    "response": "FRIDAY: In Hungary, Orb\u00e1n's era came to an end as Magyar swept to victory with a landslide. In Europe, Budapest's jubilation is palpable, but Moscow remains indifferent. The Pope speaks out against Trump, saying he has no fear \u2013 though his critics are not amused. And in India, Britney Spears' rehab stint comes at a time when her music reigns supreme. I've opened the World Monitor so you can track it visually boss.",
-    "count": 6,
-    "last_used": "2026-04-14T12:43:32.382913"
-  },
-  "coding_agent:build me a calculator app": {
-    "action": "coding_agent",
-    "target": "build me a calculator app",
-    "response": "Couldn't hear your idea boss.",
-    "count": 2,
-    "last_used": "2026-04-14T11:43:25.255378"
-  },
-  "shutdown_pc": {
-    "action": "shutdown_pc",
-    "target": null,
-    "response": "Shutting down in 30 seconds boss.",
-    "count": 1,
-    "last_used": "2026-04-14T11:43:39.665383"
-  },
-  "email_flow:to college account": {
-    "action": "email_flow",
-    "target": "to college account",
-    "response": "Email sent boss.",
-    "count": 1,
-    "last_used": "2026-04-14T12:46:03.987509"
+  "what do you see": {
+    "original": "What do you see",
+    "tool": "get_screen_text",
+    "result": "34 Careful reading instruction- Cl X â€” ~ World Monitor- Real-Time Glc xX = + > Ask Gemini = a x\nâ‚¬ > GS & daudeai/chat/cf60e61f-4d81-4492-90a9-4bbfO1d2fcb7 a * e2e won @OOesreASD ie. School\nOo Careful reading instruction ~ -t~<â€˜CsSS\n+ @Â® Pass: Timer opens, no \"Missing parameter: duration\" error O F.R.I.D.A.",
+    "usage_count": 1,
+    "avg_response_ms": 3667,
+    "last_used": "2026-04-19T20:34:22.826368",
+    "created": "2026-04-19T20:34:22.826375"
   }
 }

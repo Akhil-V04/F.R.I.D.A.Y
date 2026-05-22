@@ -7,6 +7,7 @@ from voice.tts import speak_streaming, speak
 from voice.stt import listen
 from voice.wake_word import listen_for_wake_word, is_wake_word
 from brain.ollama import ask_brain, is_ollama_running, correct_command, autonomous_execute
+from brain.qwen_executor import execute_smart
 from brain.command_parser import parse_command
 from memory.memory import cache_command, log_failure, get_most_used_commands, remember_fact, recall_facts, clear_memory, get_cached_command
 from memory.memory import load_memory
@@ -183,12 +184,11 @@ def execute_command(command, original_text=""):
         elif action == "open_and_search":
             response = open_and_search(target)
         
-        # World news briefing
+        # World news briefing (combined: opens monitor + speaks news together)
         elif action == "world_briefing":
-            speak_streaming("Give me a second boss, let me check...")
-            response = get_world_briefing()
-            open_world_monitor()
-            response += " I've opened the World Monitor so you can track it visually boss."
+            speak_streaming("Give me a second boss, let me check the news...")
+            response = get_world_briefing()  # Opens World Monitor + fetches + formats news
+            # Response already includes monitor opening confirmation
         
         # India news briefing
         elif action == "india_briefing":
@@ -485,12 +485,9 @@ def friday_core():
         if initial_command is not None:
             print(f"You said: {initial_command}")
             update_heard(initial_command)
-            command = parse_command(initial_command)
-            print(f"Action: {command['action']}")
             update_status("THINKING")
-            response = execute_command(command, initial_command)
+            response = execute_smart(initial_command)
             update_response(response)
-            log_action(command['action'], response)
             print(f"FRIDAY: {response}")
             update_status("SPEAKING")
             speak_streaming(response)
@@ -527,21 +524,10 @@ def friday_core():
                 clean_text = corrected
             
             # Check cache for repeated commands
-            cached = get_cached_command(clean_text)
-            if cached and cached.get("count", 0) >= 2:
-                print(f"Cache hit: {clean_text}")
-                command = {"action": cached["action"], "target": cached.get("target", clean_text)}
-            else:
-                # Parse the command
-                command = parse_command(clean_text)
-            
-            print(f"Action: {command['action']}")
-            
-            # Execute the command
+            # Execute the command using smart router
             update_status("THINKING")
-            response = execute_command(command, clean_text)
+            response = execute_smart(clean_text)
             update_response(response)
-            log_action(command['action'], response)
             
             # Print and speak response
             print(f"FRIDAY: {response}")

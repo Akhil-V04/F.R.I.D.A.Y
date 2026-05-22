@@ -32,6 +32,150 @@ WEBSITES = [
 ]
 
 
+def fast_path_check(user_input):
+    """
+    Fast path routing for simple, high-frequency commands.
+    Returns immediately with tool + params, bypassing Qwen.
+    
+    Target response time: <100ms
+    
+    Args:
+        user_input (str): User's command
+    
+    Returns:
+        dict: {"tool": "...", "params": {...}} or {"result": "...", "handled": True} or None if no match
+    """
+    text = user_input.lower().strip()
+    
+    # ===== EMAIL FLOW (Fully Handled) =====
+    # Email commands are handled ENTIRELY here - never pass to Qwen
+    email_keywords = [
+        "send a mail", "send mail", "send an email", "send email",
+        "write a mail", "compose mail", "mail to", "email to"
+    ]
+    if any(keyword in text for keyword in email_keywords):
+        print("[FAST PATH] Email detected - handling directly")
+        try:
+            from actions.email_flow import start_email_flow
+            result = start_email_flow(user_input)
+            return {"result": result, "handled": True}
+        except Exception as e:
+            error_msg = f"Email error: {str(e)}"
+            print(f"[ERROR] {error_msg}")
+            return {"result": error_msg, "handled": True}
+    
+    # ===== TIMER (Fully Handled) =====
+    # Timer commands are handled ENTIRELY here - never pass to Qwen
+    timer_keywords = ["timer", "set a timer", "remind me in"]
+    if any(keyword in text for keyword in timer_keywords):
+        print("[FAST PATH] Timer detected - handling directly")
+        # Extract number from input using regex
+        import re
+        match = re.search(r'(\d+)', user_input)
+        if match:
+            try:
+                from actions.clock import set_timer
+                result = set_timer(user_input)
+                return {"result": result, "handled": True}
+            except Exception as e:
+                error_msg = f"Timer error: {str(e)}"
+                print(f"[ERROR] {error_msg}")
+                return {"result": error_msg, "handled": True}
+        else:
+            error_msg = "Couldn't find a duration number boss. Try 'set a timer for 5 minutes'."
+            return {"result": error_msg, "handled": True}
+    
+    # ===== WORLD BRIEFING / NEWS =====
+    news_patterns = ["world", "news", "what's going on", "whats going on", "happening"]
+    if any(pattern in text for pattern in news_patterns):
+        return {"tool": "get_world_briefing", "params": {}}
+    
+    # ===== TIME =====
+    if "time" in text and "timer" not in text and "alarm" not in text:
+        return {"tool": "get_time", "params": {}}
+    
+    # ===== DATE =====
+    date_patterns = ["date", "what date", "today"]
+    if any(pattern in text for pattern in date_patterns):
+        return {"tool": "get_date", "params": {}}
+    
+    # ===== BATTERY =====
+    battery_patterns = ["battery", "charge"]
+    if any(pattern in text for pattern in battery_patterns):
+        return {"tool": "get_battery", "params": {}}
+    
+    # ===== SCREENSHOT =====
+    screenshot_patterns = ["screenshot", "take a screenshot", "take screenshot"]
+    if any(pattern in text for pattern in screenshot_patterns):
+        return {"tool": "take_screenshot", "params": {}}
+    
+    # ===== APP OPENING (Fully Handled - Direct Execution) =====
+    # These bypass tool registry entirely for <200ms response time
+    
+    # ===== OPEN CHROME =====
+    if "open chrome" in text or text == "chrome":
+        print("[FAST PATH] Chrome opening - executing directly")
+        try:
+            from actions.apps import open_chrome_personal
+            open_chrome_personal()
+            return {"tool": "open_app", "result": "Done boss", "handled": True}
+        except Exception as e:
+            print(f"[ERROR] Chrome error: {str(e)}")
+            return {"tool": "open_app", "result": f"Chrome error: {str(e)}", "handled": True}
+    
+    # ===== OPEN SPOTIFY =====
+    if "open spotify" in text or text == "spotify":
+        print("[FAST PATH] Spotify opening - executing directly")
+        try:
+            from actions.apps import open_app
+            open_app("spotify")
+            return {"tool": "open_app", "result": "Done boss", "handled": True}
+        except Exception as e:
+            print(f"[ERROR] Spotify error: {str(e)}")
+            return {"tool": "open_app", "result": f"Spotify error: {str(e)}", "handled": True}
+    
+    # ===== OPEN VS CODE =====
+    if "open vs code" in text or "open vscode" in text or text == "vscode" or text == "vs code":
+        print("[FAST PATH] VS Code opening - executing directly")
+        try:
+            import subprocess
+            subprocess.Popen(['code'])
+            return {"tool": "open_app", "result": "Done boss", "handled": True}
+        except Exception as e:
+            print(f"[ERROR] VS Code error: {str(e)}")
+            return {"tool": "open_app", "result": f"VS Code error: {str(e)}", "handled": True}
+    
+    # ===== OPEN NOTEPAD =====
+    if "open notepad" in text or text == "notepad":
+        print("[FAST PATH] Notepad opening - executing directly")
+        try:
+            import subprocess
+            subprocess.Popen(['notepad.exe'])
+            return {"tool": "open_app", "result": "Done boss", "handled": True}
+        except Exception as e:
+            print(f"[ERROR] Notepad error: {str(e)}")
+            return {"tool": "open_app", "result": f"Notepad error: {str(e)}", "handled": True}
+    
+    # ===== OPEN CALCULATOR =====
+    if "open calculator" in text or text == "calculator" or text == "calc":
+        print("[FAST PATH] Calculator opening - executing directly")
+        try:
+            import subprocess
+            subprocess.Popen(['calc.exe'])
+            return {"tool": "open_app", "result": "Done boss", "handled": True}
+        except Exception as e:
+            print(f"[ERROR] Calculator error: {str(e)}")
+            return {"tool": "open_app", "result": f"Calculator error: {str(e)}", "handled": True}
+    
+    # ===== READ SCREEN / ANALYZE SCREEN =====
+    screen_patterns = ["what do you see", "read screen", "read the screen", "screen"]
+    if any(pattern in text for pattern in screen_patterns):
+        return {"tool": "read_screen", "params": {}}
+    
+    # No match - return None to fall through to normal parsing
+    return None
+
+
 def parse_command(text):
     """Parse user input and extract action and target in priority order"""
     try:
@@ -337,10 +481,21 @@ def parse_command(text):
             return {"action": "autonomous", "target": text}
 
         
-        # ===== DEFAULT: Use AI to decide action (smart fallback) =====
-        from brain.ollama import decide_action
-        result = decide_action(text)
-        print(f"AI decided: {result}")
+        # ===== DEFAULT: Use AI to decide tool (smart fallback) =====
+        from brain.ollama import decide_tool
+        tool_req = decide_tool(text)
+        # Convert new tool format to old command format for backward compatibility
+        # tool_req: {"tool": "...", "params": {...}}
+        # command: {"action": "...", "target": "..."}
+        tool_name = tool_req.get("tool", "ask_brain")
+        params = tool_req.get("params", {})
+        
+        # Map tool back to old action format
+        action = tool_name if tool_name != "ask_brain" else "ask_brain"
+        target = params.get("user_input", params.get("query", text))
+        
+        result = {"action": action, "target": target}
+        print(f"AI decided (tool): {tool_name} -> (action): {action}")
         return result
     
     except Exception as e:

@@ -264,21 +264,21 @@ class FridayDashboard:
     def set_heard(self, text):
         """Update heard text"""
         def _update():
-            self.heard_var.set(f"> {text[:70]}")
+            self.heard_var.set(f"> {str(text)[:70]}")
         
         self.root.after(0, _update)
     
     def set_response(self, text):
         """Update response text"""
         def _update():
-            self.response_var.set(text[:180])
+            self.response_var.set(str(text)[:180])
         
         self.root.after(0, _update)
     
     def add_log(self, action, result):
         """Add entry to telemetry log"""
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
-        entry = f"[{timestamp}] {action.upper()} → {result[:55]}"
+        entry = f"[{timestamp}] {str(action).upper()} → {str(result)[:55]}"
         
         def _insert():
             self._insert_log(entry)

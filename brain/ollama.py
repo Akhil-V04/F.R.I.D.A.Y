@@ -1,6 +1,7 @@
 import requests
 import json
 from memory.memory import get_cached_command, cache_command
+from brain.command_parser import fast_path_check
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "qwen2.5:3b"
@@ -103,76 +104,50 @@ Corrected command:"""
 
 def decide_action(user_input):
     """
+    [DEPRECATED] Use decide_tool() instead. This is kept for backward compatibility.
+    
     Use AI to intelligently decide which action to take for ambiguous commands.
-    Smart fallback for command parser when uncertain.
+    Now delegates to decide_tool() and converts format.
     
     Args:
         user_input (str): User's voice command
     
     Returns:
-        dict: {"action": action_name, "target": target_value}
+        dict: {"action": action_name, "target": target_value} (old format, for backward compat)
     """
     try:
-        TOOLS_PROMPT = """You are FRIDAY's action router. Given a voice command, decide which action to take.
-
-Available actions:
-- open_app: open any application (chrome, brave, spotify, discord, whatsapp, notepad, calculator, vs code, file explorer)
-- open_url: open a website (youtube, github, netflix, instagram, claude, chatgpt, gmail, google)
-- search_youtube: search for videos, music, songs, tutorials, gameplay
-- search_google: search for news, scores, weather, prices, facts
-- get_time: get current time
-- get_date: get current date
-- get_battery: check battery level
-- take_screenshot: take screenshot
-- world_briefing: world news briefing
-- india_briefing: india news
-- whatsapp_flow: send whatsapp message
-- email_flow: send email
-- scroll_down: scroll down
-- scroll_up: scroll up
-- open_world_monitor: open world monitor map
-- shutdown_pc: shutdown computer
-- restart_pc: restart computer
-- ask_brain: general conversation or unknown command
-
-Rules:
-- Return ONLY a JSON object like: {{"action": "open_app", "target": "chrome"}}
-- For open_app: target = app name
-- For open_url: target = website name
-- For search_youtube/search_google: target = search query
-- For email_flow: target = "to college account" or "to personal account" or original text
-- For ask_brain: target = original text
-- No explanation, just JSON
-
-Command: "{command}"
-JSON:"""
+        # Use new tool system
+        tool_req = decide_tool(user_input)
         
-        prompt = TOOLS_PROMPT.format(command=user_input)
+        # Convert new format {"tool": "...", "params": {...}} 
+        # to old format {"action": "...", "target": "..."}
+        tool_name = tool_req.get("tool", "ask_brain")
+        params = tool_req.get("params", {})
         
-        payload = {
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"num_predict": 30, "temperature": 0.1}
-        }
+        # Map tool to action
+        action = tool_name
         
-        response = requests.post(OLLAMA_URL, json=payload, timeout=10)
-        response.raise_for_status()
+        # Extract target from params based on tool type
+        if tool_name == "ask_brain":
+            target = params.get("user_input", user_input)
+        elif tool_name in ["search_google", "search_youtube"]:
+            target = params.get("query", user_input)
+        elif tool_name == "open_app":
+            target = params.get("app_name", user_input)
+        elif tool_name == "open_url":
+            target = params.get("url", user_input)
+        elif tool_name in ["send_email", "send_whatsapp", "send_whatsapp_flow"]:
+            target = params.get("contact", params.get("initial_contact", user_input))
+        else:
+            target = user_input
         
-        # Extract response text
-        text = response.json()["response"].strip()
-        
-        # Clean markdown code blocks if present
-        text = text.replace("```json", "").replace("```", "").strip()
-        
-        # Parse JSON
-        result = json.loads(text)
-        return result
+        return {"action": action, "target": target}
     
     except Exception as e:
         print(f"Error in decide_action: {e}")
-        # Fallback to ask_brain
+        # Fallback to ask_brain with proper format
         return {"action": "ask_brain", "target": user_input}
+
 
 
 def is_ollama_running():
@@ -344,3 +319,230 @@ def autonomous_execute(goal, max_steps=10):
     except Exception as e:
         print(f"Error in autonomous_execute: {e}")
         return f"Task failed after {step} steps boss."
+
+
+def extract_json_from_response(text):
+    """
+    Extract valid JSON from Qwen response, even if surrounded by text.
+    Tries multiple extraction strategies.
+    
+    Args:
+        text (str): Raw response from Qwen
+    
+    Returns:
+        dict: Parsed JSON or None if extraction fails
+    """
+    import re
+    
+    text = text.strip()
+    
+    # Strategy 1: Try parsing the whole response as JSON
+    try:
+        return json.loads(text)
+    except:
+        pass
+    
+    # Strategy 2: Extract JSON object using regex (most robust)
+    # Finds content between outer { and last }
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if match:
+        json_str = match.group(0)
+        try:
+            return json.loads(json_str)
+        except:
+            pass
+    
+    # Strategy 3: Extract JSON array using regex
+    # Finds content between [ and ]
+    match = re.search(r'\[.*\]', text, re.DOTALL)
+    if match:
+        json_str = match.group(0)
+        try:
+            return json.loads(json_str)
+        except:
+            pass
+    
+    # Strategy 4: Fix common issues and retry
+    try:
+        # Add missing closing brace
+        if text.count('{') > text.count('}'):
+            text = text + '}' * (text.count('{') - text.count('}'))
+        # Add missing closing bracket
+        if text.count('[') > text.count(']'):
+            text = text + ']' * (text.count('[') - text.count(']'))
+        return json.loads(text)
+    except:
+        pass
+    
+    return None
+
+
+def decide_tool(user_input):
+    """
+    Use Qwen to decide which TOOL to use and extract parameters (TOOL SYSTEM).
+    Returns ONLY JSON format with tool name and params - NO normal text responses.
+    
+    Args:
+        user_input (str): User's command
+    
+    Returns:
+        dict: {"tool": "tool_name", "params": {"param": "value"}}
+    """
+    try:
+        # Import tools list
+        from tools.registry import TOOLS
+        
+        # Build tool descriptions
+        tools_desc = "\n".join([
+            f"  • {name}: {tool['description']}"
+            for name, tool in TOOLS.items()
+        ])
+        
+        # STRICT JSON PROMPT - emphasizes JSON-only output
+        prompt = f"""TOOL SELECTOR - RESPOND WITH ONLY VALID JSON
+
+Available Tools:
+{tools_desc}
+
+User Command: "{user_input}"
+
+**CRITICAL: Respond with ONLY valid JSON. No explanation, no text before or after.**
+
+Select the best tool and extract parameters.
+
+MANDATORY JSON FORMAT (exactly this structure):
+{{
+"tool": "tool_name",
+"params": {{"param1": "value1"}}
+}}
+
+Rules:
+- tool: must be from the available tools list
+- params: object with extracted parameters
+- If no parameters, use empty: {{"params": {{}}}}
+- If command unclear, tool must be "ask_brain"
+
+RESPOND WITH ONLY THE JSON OBJECT. NOTHING ELSE."""
+        
+        payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "num_predict": 100,
+                "temperature": 0.05,  # Very low for strict JSON
+                "top_p": 0.8,
+                "top_k": 40,
+                "stop": ["}", "\n\n"]  # Stop after JSON close
+            }
+        }
+        
+        response = requests.post(OLLAMA_URL, json=payload, timeout=15)
+        response.raise_for_status()
+        
+        text = response.json()["response"].strip()
+        
+        # Try to extract valid JSON
+        result = extract_json_from_response(text)
+        
+        if result and isinstance(result, dict):
+            # Validate structure
+            if "tool" in result and "params" in result:
+                # Sanitize params for ask_brain - only keep user_input
+                if result["tool"] == "ask_brain":
+                    user_input_val = result["params"].get("user_input", user_input)
+                    # Remove all extra parameters, keep only user_input
+                    result["params"] = {"user_input": user_input_val}
+                return result
+        
+        # Fallback: return safe default
+        return {"tool": "ask_brain", "params": {"user_input": user_input}}
+    
+    except Exception as e:
+        print(f"Error in decide_tool: {e}")
+        # Safe fallback
+        return {"tool": "ask_brain", "params": {"user_input": user_input}}
+
+
+def plan_tasks(user_input):
+    """
+    Split a multi-step command and generate tool calls for each step.
+    Uses rule-based splitting on common connectors: "and", "then", " after ".
+    For each step, tries fast_path_check first (instant matching), then decide_tool.
+    Handles nested multi-step commands (multiple connectors).
+    
+    Args:
+        user_input (str): User's complex command
+    
+    Returns:
+        dict: {"steps": [{"tool": "tool_name", "params": {...}}, ...]}
+    """
+    def split_on_connectors(text):
+        """Recursively split text on connectors, handling nested multi-step."""
+        connectors = [" and then ", " after ", " and ", " then ", ", then "]
+        
+        for connector in connectors:
+            if connector.lower() in text.lower():
+                # Split preserving case-insensitive matching
+                parts = text.split(connector)
+                all_steps = []
+                for part in parts:
+                    part = part.strip()
+                    if not part:
+                        continue
+                    # Recursively check if this part also has connectors
+                    nested_steps = split_on_connectors(part)
+                    all_steps.extend(nested_steps)
+                return all_steps if all_steps else [text]
+        
+        return [text]
+    
+    try:
+        # Split on connectors (handles nested)
+        steps = split_on_connectors(user_input)
+        
+        # Process each step through fast_path_check first, then decide_tool
+        plan_steps = []
+        for step in steps:
+            step = step.strip()
+            if not step:  # Skip empty steps
+                continue
+            
+            # ===== BUG 4: Use fast_path_check first for instant matching =====
+            # Fast path check for high-frequency patterns
+            fast_result = fast_path_check(step)
+            
+            if fast_result:
+                # Fast path matched
+                plan_steps.append({
+                    "tool": fast_result.get("tool", "ask_brain"),
+                    "params": fast_result.get("params", {})
+                })
+            else:
+                # Fall back to decide_tool for complex commands
+                result = decide_tool(step)
+                
+                if result and "tool" in result:
+                    plan_steps.append({
+                        "tool": result.get("tool", "ask_brain"),
+                        "params": result.get("params", {})
+                    })
+        
+        # Return plan or fallback if nothing parsed
+        if plan_steps:
+            return {"steps": plan_steps}
+        else:
+            return {
+                "steps": [
+                    {"tool": "ask_brain", "params": {"user_input": user_input}}
+                ]
+            }
+    
+    except Exception as e:
+        print(f"Error in plan_tasks: {e}")
+        # Safe fallback
+        return {
+            "steps": [
+                {"tool": "ask_brain", "params": {"user_input": user_input}}
+            ]
+        }

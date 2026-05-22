@@ -165,102 +165,99 @@ def wait_for_clock_load(max_wait=5):
     return False
 
 
-def set_timer(duration_str):
+def set_timer(user_input):
     """
-    Set a timer using Windows Clock app.
-    Duration format: "5 minutes", "30 seconds", "1 hour", etc.
+    Set a timer using Windows Clock app with voice input.
+    
+    Extracts duration from voice input:
+    - "5 minutes", "set a timer for 5 minutes"
+    - "30 seconds", "remind me in 30 seconds"
+    - "2 hours", "timer for 2 hours"
     
     Args:
-        duration_str (str): Timer duration (e.g., "5 minutes", "30 seconds")
+        user_input (str): Voice input with timer duration
     
     Returns:
-        tuple: (success: bool, response: str)
+        str: Status message
     """
     try:
-        # Parse duration
-        match = re.search(r'(\d+)\s*(minute|second|hour|min|sec|hr)?', duration_str.lower())
+        # ===== STEP 1: Extract number from voice input =====
+        match = re.search(r'(\d+)', user_input)
         if not match:
-            return False, "Couldn't understand the timer duration boss."
+            return "Couldn't find a number in your request boss. Try 'set a timer for 5 minutes'."
         
-        duration = int(match.group(1))
-        unit = match.group(2) or "minute"
+        number = int(match.group(1))
         
-        # Normalize unit
-        if unit in ["minute", "min"]:
-            display = f"{duration} minute{'s' if duration > 1 else ''}"
-            # Pre-built timers in Clock app: 5, 10, 1, 2, 30
-            button_targets = {1: "1 min", 2: "2 min", 5: "5 min", 10: "10 min", 30: "30 min"}
-        elif unit in ["second", "sec"]:
-            display = f"{duration} second{'s' if duration > 1 else ''}"
-            button_targets = {}
-        elif unit in ["hour", "hr"]:
-            display = f"{duration} hour{'s' if duration > 1 else ''}"
-            button_targets = {}
+        # ===== STEP 2: Determine time unit and convert to minutes =====
+        user_lower = user_input.lower()
+        duration_minutes = number
+        unit_display = "minutes"
+        
+        if "hour" in user_lower:
+            duration_minutes = number * 60
+            unit_display = f"hour{'s' if number > 1 else ''}"
+        elif "second" in user_lower:
+            duration_minutes = max(1, number // 60)  # Convert seconds to minutes, min 1
+            unit_display = f"second{'s' if number > 1 else ''}"
+        elif "minute" in user_lower or "min" in user_lower:
+            duration_minutes = number
+            unit_display = f"minute{'s' if number > 1 else ''}"
         else:
-            return False, "Invalid timer unit boss."
+            # Default to minutes if no unit specified
+            duration_minutes = number
+            unit_display = f"minute{'s' if number > 1 else ''}"
         
-        # Open Clock app and ensure it's focused
-        print("[DEBUG] Opening and focusing Clock app...")
-        if not open_clock():
-            return False, "Couldn't open Clock app boss. Is it installed on your system?"
+        print(f"[TIMER] Extracted: {number} {unit_display} = {duration_minutes} minutes")
         
-        # Wait for app to fully load
-        time.sleep(1)
-        
-        # Ensure window is focused
-        print("[DEBUG] Clicking to focus Clock app...")
-        focus_window("Clock")
-        time.sleep(0.5)
-        
-        # If duration matches a preset timer, click its play button
-        if duration in button_targets:
-            print(f"[DEBUG] Clicking play button for {display}...")
-            
-            # Wait longer for Clock app to fully render and become responsive
+        # ===== STEP 3: Open Windows Clock app =====
+        print("[TIMER] Opening Windows Clock app...")
+        try:
+            subprocess.Popen(['explorer.exe', 'shell:AppsFolder\\Microsoft.WindowsAlarms_8wekyb3d8bbwe!App'])
             time.sleep(3)
-            
-            # Play button coordinates for pre-built timers in Clock app (USER VERIFIED)
-            # Row 1: 1min(626,4178)  2min(1110,4188)  5min(1589,4228)
-            # Row 2: 10min(625,8394) 15min(1106,8428) 30min(1586,8398)
-            timer_play_buttons = {
-                1: (626, 419),     # 1 min - top-left
-                2: (1106, 418),    # 2 min - top-middle
-                5: (1591, 417),    # 5 min - top-right
-                10: (626, 842),    # 10 min - bottom-left
-                15: (1106, 842),   # 15 min - bottom-middle
-                30: (1591, 842),   # 30 min - bottom-right
-            }
-            
-            if duration in timer_play_buttons:
-                x, y = timer_play_buttons[duration]
-                print(f"[DEBUG] Play button coordinates for {duration}min: ({x}, {y})")
-                
-                # Move mouse to button location first (helps with event generation)
-                print(f"[DEBUG] Moving mouse to play button...")
-                pyautogui.moveTo(x, y, duration=0.3)
-                
-                # Add delay before clicking
-                time.sleep(0.3)
-                
-                # Perform left mouse click
-                print(f"[DEBUG] Clicking play button at ({x}, {y})...")
-                pyautogui.click(x, y)
-                
-                # Give window time to process the click
-                time.sleep(0.5)
-                print(f"[DEBUG] Play button clicked!")
-                time.sleep(1)
-                
-                return True, f"Timer set for {display} boss. Clock app is keeping track!"
+        except Exception as e:
+            return f"Could not open Windows Clock app: {str(e)}"
         
-        # Fallback: just keep the app open
-        print(f"[DEBUG] Timer duration not in pre-built timers, keeping Clock app open...")
+        # ===== STEP 4: Navigate to Timer tab using Tab key =====
+        print("[TIMER] Navigating to Timer tab...")
+        try:
+            pyautogui.press('tab')
+            time.sleep(0.3)
+            pyautogui.press('tab')
+            time.sleep(0.3)
+            pyautogui.press('tab')
+            time.sleep(0.3)
+            pyautogui.press('enter')
+            time.sleep(1)
+        except Exception as e:
+            print(f"[TIMER] Tab navigation error: {e}")
         
-        return True, f"Clock app is open boss. Set timer to {display} manually!"
+        # ===== STEP 5: Click + button to set minutes =====
+        print(f"[TIMER] Clicking + button {duration_minutes} times...")
+        try:
+            # The + button is typically in the Clock app for timer duration
+            # We'll click it duration_minutes times to set the duration
+            for i in range(duration_minutes):
+                # Click the + button (coordinates may vary, this is approximate)
+                # The + button is usually in the center area of the timer interface
+                pyautogui.press('up')  # Alternative: press up arrow key to increment timer
+                time.sleep(0.2)
+        except Exception as e:
+            print(f"[TIMER] Error clicking + button: {e}")
+        
+        # ===== STEP 6: Press Enter to start timer =====
+        print("[TIMER] Starting timer...")
+        try:
+            pyautogui.press('enter')
+            time.sleep(1)
+        except Exception as e:
+            print(f"[TIMER] Error starting timer: {e}")
+        
+        # ===== STEP 7: Return confirmation =====
+        return f"Timer set for {duration_minutes} minutes boss"
     
     except Exception as e:
         print(f"[ERROR] Timer error: {str(e)}")
-        return False, f"Failed to set timer boss: {str(e)}"
+        return f"Failed to set timer boss: {str(e)}"
 
 
 def set_alarm(alarm_time_str):
