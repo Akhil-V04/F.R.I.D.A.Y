@@ -1,0 +1,355 @@
+.sci-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  background: rgba(0, 20, 40, 0.4);
+  backdrop-filter: blur(20px);
+  border-bottom: 2px solid;
+  border-image: linear-gradient(90deg, #00fff0 0%, #0080ff 50%, #00fff0 100%) 1;
+  box-shadow: 
+    0 0 30px rgba(0, 255, 240, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  font-family: 'Courier New', monospace;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Animated glow background */
+.navbar-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 255, 240, 0),
+    rgba(0, 255, 240, 0.05),
+    rgba(0, 255, 240, 0)
+  );
+  animation: glowShift 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glowShift {
+  0%, 100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+/* Border animation */
+.navbar-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #00fff0,
+    #0080ff,
+    #00fff0,
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: borderFlow 3s linear infinite;
+}
+
+@keyframes borderFlow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Scanline effect */
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 240, 0.03) 0px,
+    rgba(0, 255, 240, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  animation: scan 8s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(10px);
+  }
+}
+
+/* Brand section */
+.navbar-brand {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.brand-icon {
+  font-size: 24px;
+  color: #00fff0;
+  animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.brand-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #00fff0;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px #00fff0, 0 0 20px rgba(0, 255, 240, 0.5);
+}
+
+.brand-status {
+  font-size: 11px;
+  color: #00ff00;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  border-radius: 3px;
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% {
+    box-shadow: inset 0 0 0 0 rgba(0, 255, 0, 0.3);
+  }
+  50% {
+    box-shadow: inset 0 0 8px 0 rgba(0, 255, 0, 0.5);
+  }
+}
+
+/* Menu items */
+.navbar-menu {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: 5px;
+}
+
+.menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(0, 255, 240, 0.05);
+  border: 1px solid rgba(0, 255, 240, 0.2);
+  border-radius: 4px;
+  color: #00fff0;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 240, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.menu-item:hover {
+  background: rgba(0, 255, 240, 0.15);
+  border-color: rgba(0, 255, 240, 0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 240, 0.3), inset 0 0 15px rgba(0, 255, 240, 0.1);
+}
+
+.menu-item:hover::before {
+  left: 100%;
+}
+
+.menu-item.active {
+  background: rgba(0, 255, 240, 0.25);
+  border-color: #00fff0;
+  box-shadow: 0 0 20px rgba(0, 255, 240, 0.5), inset 0 0 20px rgba(0, 255, 240, 0.2);
+  color: #ffffff;
+  text-shadow: 0 0 10px #00fff0;
+}
+
+.menu-icon {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.menu-label {
+  font-weight: 600;
+}
+
+.menu-active-line {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00fff0, #0080ff, #00fff0);
+  animation: pulse-line 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-line {
+  0%, 100% {
+    box-shadow: 0 0 5px #00fff0;
+  }
+  50% {
+    box-shadow: 0 0 15px #00fff0;
+  }
+}
+
+/* Status section */
+.navbar-status {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #00ff00;
+  letter-spacing: 1px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.pulse-green {
+  background: #00ff00;
+  box-shadow: 0 0 8px #00ff00;
+}
+
+.pulse-cyan {
+  background: #00fff0;
+  box-shadow: 0 0 8px #00fff0;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.status-separator {
+  width: 1px;
+  height: 20px;
+  background: linear-gradient(180deg, transparent, #00fff0, transparent);
+}
+
+/* Navigation button */
+.nav-button {
+  padding: 6px 12px;
+  background: rgba(0, 255, 240, 0.1);
+  border: 1px solid rgba(0, 255, 240, 0.4);
+  border-radius: 3px;
+  color: #00fff0;
+  font-size: 10px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+  background: rgba(0, 255, 240, 0.2);
+  border-color: #00fff0;
+  box-shadow: 0 0 12px rgba(0, 255, 240, 0.4);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .sci-navbar {
+    padding: 0 20px;
+    height: 70px;
+  }
+
+  .brand-text {
+    font-size: 14px;
+  }
+
+  .navbar-menu {
+    gap: 2px;
+  }
+
+  .menu-item {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sci-navbar {
+    height: 60px;
+    padding: 0 15px;
+  }
+
+  .brand-icon {
+    font-size: 18px;
+  }
+
+  .brand-text {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .navbar-menu {
+    display: none;
+  }
+
+  .nav-button {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+}

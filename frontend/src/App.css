@@ -1,0 +1,15 @@
+.App {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.app-content {
+  width: 100%;
+  height: calc(100vh - 80px);
+  margin-top: 80px;
+  position: relative;
+}
