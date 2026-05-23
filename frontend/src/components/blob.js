@@ -84,10 +84,14 @@ export default function PlasmaOrb({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.9;
+    renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.domElement.style.display = "block";
+    renderer.domElement.style.background = "transparent";
     el.appendChild(renderer.domElement);
 
     // Scene / Camera
     const scene = new THREE.Scene();
+    scene.background = null;
     const camera = new THREE.PerspectiveCamera(75, W / H, 0.1, 100);
     camera.position.z = 2.4;
 
@@ -343,12 +347,12 @@ export default function PlasmaOrb({
         position: "relative",
         width: "100%",
         height: "100%",
-        background: "#000",
+        background: "transparent",
         overflow: "hidden",
       }}
     >
       {/* Three.js canvas mount */}
-      <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
+      <div ref={mountRef} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
 
       {/* HUD */}
       <div
