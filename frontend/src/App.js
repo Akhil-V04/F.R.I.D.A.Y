@@ -1,6 +1,7 @@
 import './App.css';
 import Navbar from './components/Navbar';
 import PlasmaOrb from './components/blob';
+import SpeechTerminal from './components/SpeechTerminal';
 
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
       }}>
         <PlasmaOrb />
       </div>
+      <SpeechTerminal />
     </div>
   );
 }

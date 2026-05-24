@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
@@ -57,8 +57,6 @@ const SHELL_FRAG = `
 export default function PlasmaOrb({
   /** Parent container class — override to size the orb differently */
   className = "",
-  /** Called with (isListening: boolean) whenever mic state changes */
-  onListeningChange,
 }) {
   const mountRef = useRef(null);
   const threeRef = useRef({}); // holds all THREE objects
@@ -305,40 +303,6 @@ export default function PlasmaOrb({
     };
   }, []);
 
-  // ── Mic controls ────────────────────────────────────────────
-  const startMic = useCallback(async () => {
-    try {
-      setStatus("REQUESTING...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      ctx.createMediaStreamSource(stream).connect(analyser);
-      audioRef.current = { ctx, analyser, stream, data };
-      setListening(true);
-      setStatus("LISTENING");
-      onListeningChange?.(true);
-    } catch {
-      setStatus("MIC DENIED");
-    }
-  }, [onListeningChange]);
-
-  const stopMic = useCallback(() => {
-    const a = audioRef.current;
-    a.stream?.getTracks().forEach((t) => t.stop());
-    a.ctx?.close();
-    audioRef.current = { ctx: null, analyser: null, stream: null, data: null };
-    smoothRef.current = 0;
-    setListening(false);
-    setStatus("IDLE");
-    setLevel(0);
-    onListeningChange?.(false);
-  }, [onListeningChange]);
-
-  const toggleMic = () => (listening ? stopMic() : startMic());
-
   // ── Render ───────────────────────────────────────────────────
   return (
     <div
@@ -395,29 +359,6 @@ export default function PlasmaOrb({
         >
           {status}
         </div>
-
-        {/* Button */}
-        <button
-          onClick={toggleMic}
-          style={{
-            pointerEvents: "all",
-            background: listening ? "rgba(0,255,240,0.12)" : "transparent",
-            border: "1px solid #00fff0",
-            color: "#00fff0",
-            padding: "10px 28px",
-            fontFamily: "'Courier New', monospace",
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            boxShadow: listening
-              ? "0 0 32px rgba(0,255,240,0.6), inset 0 0 20px rgba(0,255,240,0.15)"
-              : "0 0 12px rgba(0,255,240,0.2), inset 0 0 12px rgba(0,255,240,0.05)",
-            transition: "all 0.3s",
-          }}
-        >
-          {listening ? "Deactivate Mic" : "Activate Mic"}
-        </button>
       </div>
     </div>
   );

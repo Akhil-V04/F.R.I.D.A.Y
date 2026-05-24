@@ -1,0 +1,133 @@
+.speech-terminal-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 30px;
+  background: rgba(5, 10, 20, 0.7);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-top: 2px solid rgba(0, 255, 240, 0.4);
+  border-bottom: 1px solid rgba(0, 255, 240, 0.2);
+  font-family: 'Courier New', monospace;
+  color: #00fff0;
+  z-index: 999;
+  box-shadow: 
+    0 -8px 40px rgba(0, 255, 240, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 2px 8px rgba(0, 255, 240, 0.1);
+}
+
+/* Speaker Label */
+.terminal-speaker {
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.speaker-name {
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #00fff0;
+  text-shadow: 0 0 12px rgba(0, 255, 240, 0.8), 0 0 20px rgba(0, 255, 240, 0.4);
+}
+
+/* Text Display */
+.terminal-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.text-content {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #00fff0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(0, 255, 240, 0.6);
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background: #00fff0;
+  animation: cursor-blink 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes cursor-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Status Indicator */
+.terminal-indicator {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.status-light {
+  width: 8px;
+  height: 20px;
+  background: rgba(0, 255, 240, 0.2);
+  border: 1px solid rgba(0, 255, 240, 0.3);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.status-light.active {
+  background: #00fff0;
+  box-shadow: 0 0 12px #00fff0, inset 0 0 6px rgba(0, 255, 240, 0.6);
+  animation: pulse-bar 1s ease-in-out infinite;
+}
+
+@keyframes pulse-bar {
+  0%, 100% {
+    box-shadow: 0 0 8px #00fff0, inset 0 0 6px rgba(0, 255, 240, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 16px #00fff0, inset 0 0 10px rgba(0, 255, 240, 0.8);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .speech-terminal-bar {
+    height: 45px;
+    padding: 0 20px;
+    gap: 15px;
+  }
+
+  .speaker-name {
+    font-size: 11px;
+    min-width: 80px;
+  }
+
+  .text-content {
+    font-size: 10px;
+  }
+
+  .status-light {
+    width: 6px;
+    height: 18px;
+  }
+}
